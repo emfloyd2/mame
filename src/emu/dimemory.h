@@ -104,7 +104,7 @@ public:
 		assert((0 <= spacenum) && (max_space_count() > spacenum));
 		m_addrspace.resize(std::max<std::size_t>(m_addrspace.size(), spacenum + 1));
 		assert(!m_addrspace[spacenum]);
-		m_addrspace[spacenum] = std::make_unique<Space>(manager, *this, spacenum);
+		m_addrspace[spacenum] = std::make_unique<Space>(manager, *this, spacenum, space_config(spacenum)->addr_width());
 	}
 	void prepare_maps() { for (auto const &space : m_addrspace) { if (space) { space->prepare_map(); } } }
 	void populate_from_maps() { for (auto const &space : m_addrspace) { if (space) { space->populate_from_map(); } } }
