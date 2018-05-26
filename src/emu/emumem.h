@@ -143,14 +143,18 @@ public:
 	static constexpr u8 START = 1;
 	static constexpr u8 END   = 2;
 
-	struct range {
-		offs_t start;
-		offs_t end;
+	// Intermediary structure for reference count checking
+	class reflist {
+	public:
+		void add(const handler_entry *entry);
 
-		inline void set(offs_t _start, offs_t _end) {
-			start = _start;
-			end = _end;
-		}
+		void propagate();
+		void check();
+
+	private:
+		std::unordered_map<const handler_entry *, u32> refcounts;
+		std::unordered_set<const handler_entry *> seen;
+		std::unordered_set<const handler_entry *> todo;
 	};
 
 	handler_entry(address_space *space, u32 flags) { m_space = space; m_refcount = 1; m_flags = flags; }
@@ -164,8 +168,20 @@ public:
 	inline bool is_units() const { return m_flags & F_UNITS; }
 
 	virtual std::string name() const = 0;
+	virtual void enumerate_references(handler_entry::reflist &refs) const;
+	u32 get_refcount() const { return m_refcount; }
 
 protected:
+	struct range {
+		offs_t start;
+		offs_t end;
+
+		inline void set(offs_t _start, offs_t _end) {
+			start = _start;
+			end = _end;
+		}
+	};
+
 	address_space *m_space;
 	mutable u32 m_refcount;
 	u32 m_flags;
@@ -707,6 +723,7 @@ public:
 	}
 
 	virtual void invalidate_caches(read_or_write mode) = 0;
+	virtual void validate_reference_counts() const = 0;
 
 	int data_width() const { return m_config.data_width(); }
 	int addr_width() const { return m_config.addr_width(); }
